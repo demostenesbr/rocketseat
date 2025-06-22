@@ -15,31 +15,42 @@
 // stdin => Lê dados do terminal
 // stdout => Escreve dados no terminal
 
-import { Readable } from 'node:stream';
+// Streams -->
+
+import { Readable, Writable, Transform } from "node:stream";
 
 class OneToHundredStream extends Readable {
-  index = 1
+    index = 1;
 
-  _read() {
-    const i = this.index++
+    _read() {
+        const i = this.index++;
 
-    setTimeout(() => {
-      if (i > 100) {
-        this.push(null);
-      } else {
-        const buf = Buffer.from(String(i))
+        setTimeout(() => {
+            if (i > 100) {
+                this.push(null); // Indica que não há mais dados
+            } else {
+                const buffer = Buffer.from(String(i));
 
-        this.push(buf)
-      }
-    }, 1000);
+                this.push(buffer); // Envia o dado para o próximo stream
+            }
+        }, 1000); // Simula um atraso de 1 segundo
+    }
+}
+
+class MultiplyByTenStream extends Writable {
+  _write(chunk, encoding, callback) {
+    console.log(Number(chunk.toString()) * 10);
+    callback(); // Indica que o dado foi processado
   }
 }
 
+class InverseNumberStreamTransform extends Transform {
+    _transform(chunk, encoding, callback) {
+        const transformed = Number(chunk.toString()) * -1;
+        callback(null, Buffer.from(String(transformed)));
+    }
+}
 
 new OneToHundredStream()
-  .pipe(process.stdout)
-
-
-/*
-process.stdin
-    .pipe(process.stdout) */
+    .pipe(new InverseNumberStreamTransform())
+    .pipe(new MultiplyByTenStream());
